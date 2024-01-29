@@ -21,6 +21,18 @@ sam validate
 sam deploy --guided
 ```
 
+## adding the prompts to DynamoDB
+After successfully deploying the solution you need to run the 'create_prompt_catalog.py' inside /scripts folder to populate the example prompts. You can alwaysre-run the scripts to add/modify the prompt list at any time.
+
+## UI
+We used Streamlit for a simple UI and deployed it to SageMaker Studio. Follow these steps to run the streamlit app.
+
+```
+sh setup.sh #install dependencies
+sh run.sh #run the streamlit app
+sh cleanup.sh #clean up 
+```
+
 ## Cleanup
 To delete the application that you created, use the AWS CLI. Assuming you used your project name for the stack name, you can run the following:
 
