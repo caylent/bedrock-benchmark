@@ -1,0 +1,163 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Sample SAM Template for bedrockbenchmark
+
+Resources:
+  BedrockBenchmarkStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: statemachine/bedrock_benchmark.asl.json
+      DefinitionSubstitutions:
+        AnthropicFunctionArn: !GetAtt AnthropicFunction.Arn
+        AmazonFunctionArn: !GetAtt AmazonFunction.Arn
+        CohereFunctionArn: !GetAtt CohereFunction.Arn
+        Ai21FunctionArn: !GetAtt Ai21Function.Arn
+      Events:
+        DailyBenchmarkingSchedule:
+          Type: Schedule
+          Properties:
+            Description: Schedule to run the bedrock benchmarking state machine every day
+            Enabled: True 
+            Schedule: "rate(1 day)"
+      Policies:
+        - LambdaInvokePolicy:
+            FunctionName: !Ref AnthropicFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref CohereFunction
+        - LambdaInvokePolicy:
+            FunctionName: !Ref Ai21Function
+        - LambdaInvokePolicy:
+            FunctionName: !Ref AmazonFunction
+
+  AnthropicFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/
+      Handler: app.lambda_handler
+      Runtime: python3.10
+      Architectures:
+        - x86_64
+      Timeout: 600
+      MemorySize: 150
+      Layers:
+       - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:layer:boto3-bedrock:1
+       - !Sub arn:aws:lambda:${AWS::Region}:336392948345:layer:AWSSDKPandas-Python310:5
+      Policies: arn:aws:iam::aws:policy/AdministratorAccess
+      Environment:
+        Variables:
+          model_shape: '{"prompt": "", "temperature": 1.0, "top_p": 1.0, "top_k": 250, "max_tokens_to_sample": 2048, "stop_sequences": ["\n\nHuman:"]}'
+          supported_models: '["anthropic.claude-instant-v1", "anthropic.claude-v2"]'
+          benchmark_table: !Ref BedrockBenchmarkTable
+          prompt_catalog: !Ref BedrockBenchmarkPromptsTable
+
+  CohereFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/
+      Handler: app.lambda_handler
+      Runtime: python3.10
+      Architectures:
+        - x86_64
+      Timeout: 600
+      MemorySize: 150
+      Layers:
+       - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:layer:boto3-bedrock:1
+       - !Sub arn:aws:lambda:${AWS::Region}:336392948345:layer:AWSSDKPandas-Python310:5
+      Policies: arn:aws:iam::aws:policy/AdministratorAccess
+      Environment:
+        Variables:
+          model_shape: '{"prompt": "", "temperature": 0.75, "p": 0.01, "k": 0, "stop_sequences": [],"return_likelihoods": "NONE", "max_tokens": 2048}'
+          supported_models: '["cohere.command-text-v14"]'
+          benchmark_table: !Ref BedrockBenchmarkTable
+          prompt_catalog: !Ref BedrockBenchmarkPromptsTable
+
+  Ai21Function:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/
+      Handler: app.lambda_handler
+      Runtime: python3.10
+      Architectures:
+        - x86_64
+      Timeout: 600
+      MemorySize: 150 
+      Layers:
+       - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:layer:boto3-bedrock:1
+       - !Sub arn:aws:lambda:${AWS::Region}:336392948345:layer:AWSSDKPandas-Python310:5
+      Policies: arn:aws:iam::aws:policy/AdministratorAccess
+      Environment:
+        Variables:
+          model_shape:  '{"prompt": "", "temperature": 1.0, "maxTokens": 2048}'
+          supported_models: '["ai21.j2-mid", "ai21.j2-ultra"]'
+          benchmark_table: !Ref BedrockBenchmarkTable
+          prompt_catalog: !Ref BedrockBenchmarkPromptsTable
+
+  AmazonFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/
+      Handler: app.lambda_handler
+      Runtime: python3.10
+      Architectures:
+        - x86_64
+      Timeout: 600
+      MemorySize: 150
+      Layers:
+       - !Sub arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:layer:boto3-bedrock:1
+       - !Sub arn:aws:lambda:${AWS::Region}:336392948345:layer:AWSSDKPandas-Python310:5
+      Policies: arn:aws:iam::aws:policy/AdministratorAccess
+      Environment:
+        Variables:
+          model_shape: '{"inputText": "", "textGenerationConfig": {"temperature": 1.0, "topP": 1.0, "maxTokenCount": 4096, "stopSequences": []}}'
+          supported_models: '["amazon.titan-tg1-large", "amazon.titan-text-express-v1"]'
+          benchmark_table: !Ref BedrockBenchmarkTable
+          prompt_catalog: !Ref BedrockBenchmarkPromptsTable
+
+  BedrockBenchmarkTable:
+    Type: 'AWS::DynamoDB::Table'
+    Properties:
+      TableName: bedrockbenchmark
+      AttributeDefinitions:
+        - AttributeName: MODEL_ID_PROMP_ID
+          AttributeType: S
+        - AttributeName: Date
+          AttributeType: S
+        - AttributeName: PROMP_ID_MODEL_ID
+          AttributeType: S
+      KeySchema:
+        - AttributeName: MODEL_ID_PROMP_ID
+          KeyType: HASH
+        - AttributeName: Date
+          KeyType: RANGE
+      BillingMode: PAY_PER_REQUEST
+      GlobalSecondaryIndexes:
+        - IndexName: PROMP_ID_MODEL_ID_GSI
+          KeySchema:
+            - AttributeName: PROMP_ID_MODEL_ID
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+
+  BedrockBenchmarkPromptsTable:
+    Type: 'AWS::DynamoDB::Table'
+    Properties:
+      TableName: bedrockbenchmarkprompts
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: prompt
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+        - AttributeName: prompt
+          KeyType: RANGE
+      BillingMode: PAY_PER_REQUEST
+
+Outputs:
+  benchmarktable:
+    Value: !Ref BedrockBenchmarkTable
+  promptcatalogtable:
+    Value: !Ref BedrockBenchmarkPromptsTable
+
