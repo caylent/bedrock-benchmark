@@ -1,4 +1,4 @@
-# bedrock benchmark
+# Bedrock Benchmark
 This project contains source code and supporting files for a serverless application that you can deploy with the SAM CLI. It includes the following files and folders:
 
 - functions - Code for the application's Lambda functions to Call Bedrock APIs.
