@@ -29,7 +29,7 @@ Resources:
             FunctionName: !Ref Ai21Function
         - LambdaInvokePolicy:
             FunctionName: !Ref AmazonFunction
-
+  
   AnthropicFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -40,8 +40,6 @@ Resources:
         - x86_64
       Timeout: 600
       MemorySize: 150
-      Layers:
-       - !Sub arn:aws:lambda:${AWS::Region}:336392948345:layer:AWSSDKPandas-Python312:1
       Policies: arn:aws:iam::aws:policy/AdministratorAccess
       Environment:
         Variables:
@@ -60,8 +58,6 @@ Resources:
         - x86_64
       Timeout: 600
       MemorySize: 150
-      Layers:
-       - !Sub arn:aws:lambda:${AWS::Region}:336392948345:layer:AWSSDKPandas-Python312:1
       Policies: arn:aws:iam::aws:policy/AdministratorAccess
       Environment:
         Variables:
@@ -80,8 +76,6 @@ Resources:
         - x86_64
       Timeout: 600
       MemorySize: 150 
-      Layers:
-       - !Sub arn:aws:lambda:${AWS::Region}:336392948345:layer:AWSSDKPandas-Python312:1
       Policies: arn:aws:iam::aws:policy/AdministratorAccess
       Environment:
         Variables:
@@ -100,8 +94,6 @@ Resources:
         - x86_64
       Timeout: 600
       MemorySize: 150
-      Layers:
-       - !Sub arn:aws:lambda:${AWS::Region}:336392948345:layer:AWSSDKPandas-Python312:1
       Policies: arn:aws:iam::aws:policy/AdministratorAccess
       Environment:
         Variables:
