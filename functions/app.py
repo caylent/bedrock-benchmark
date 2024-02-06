@@ -128,9 +128,9 @@ def try_prompts():
             
             if model.startswith("anthropic"):
                 if len(data_old) == 0:
-                    put_item_anthropic(model, response, today_date, resp, elapsed_time)
+                    put_item_anthropic(model, response, today_date, resp, elapsed_time, model_shape)
                 elif computeMD5hash(resp["completion"]) != data_old[-1]['output_hash']:
-                    put_item_anthropic(model, response, today_date, resp, elapsed_time)
+                    put_item_anthropic(model, response, today_date, resp, elapsed_time, model_shape)
     
             elif model.startswith("amazon.titan"):
                 if len(data_old) == 0:
