@@ -27,6 +27,7 @@ sam deploy --guided
 In the current solution the following metrics are collected for each model:
 - latency
 - output token size (if the output token size is part of the Bedrock api response otherwise number of characters)
+- model parameters for invokation
 
 ## Prompt Repository
 After successfully deploying the solution you need to run the 'create_prompt_catalog.py' inside /scripts folder to populate the example prompts. You can always re-run the scripts to add/modify the prompt list at any time.

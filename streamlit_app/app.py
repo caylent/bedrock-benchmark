@@ -31,40 +31,40 @@ def fetch_data():
     df = pd.json_normalize(response['Items'])
 
     if 'Rating' in df.columns:
-        df1 = df.drop(columns=['output_hash', 'token_size', 'PROMP_ID_MODEL_ID', 'Rating'])
+        df1 = df.drop(columns=['output_hash', 'token_size', 'prompt_model_id', 'Rating'])
     else:
-        df1 = df.drop(columns=['output_hash', 'token_size', 'PROMP_ID_MODEL_ID'])
+        df1 = df.drop(columns=['output_hash', 'token_size', 'prompt_model_id'])
 
-    df2 = pd.DataFrame(df.MODEL_ID_PROMP_ID.str.split('_',1).tolist(),
+    df2 = pd.DataFrame(df.model_prompt_id.str.split('_',1).tolist(),
                                      columns = ['model','prompt'])
     df3 = pd.concat([df1,df2], axis=1)
 
     # remove the test records
     df4 = df3[df3['prompt'].str.split('_',1).str[1].str.len() > 2]
 
-    df4['Date']= pd.to_datetime(df4['Date'])
+    df4['date']= pd.to_datetime(df4['date'])
     
     
     # get the latest record per model/prompt category
-    latest_records = df4.sort_values(by=['Date'], ascending=False).groupby(['model','prompt']).nth(0)
+    latest_records = df4.sort_values(by=['date'], ascending=False).groupby(['model','prompt']).nth(0)
     latest_records.reset_index(inplace=True)
     latest_records = latest_records.sort_values(by=['prompt', 'model'])
     latest_records['output'] = latest_records['output'].str.replace('\n', ' ')
 
-    unique_values = latest_records['MODEL_ID_PROMP_ID'].values
+    unique_values = latest_records['model_prompt_id'].values
     
     # get the latest record per model/prompt category
-    latest_records_1 = df4.sort_values(by=['Date'], ascending=False).groupby(['model','prompt']).nth(1)
+    latest_records_1 = df4.sort_values(by=['date'], ascending=False).groupby(['model','prompt']).nth(1)
     latest_records_1.reset_index(inplace=True)
 
     # only for the records in the latest dataframe (above)
-    latest_records_1 = latest_records_1[latest_records_1['MODEL_ID_PROMP_ID'].isin(unique_values)]
+    latest_records_1 = latest_records_1[latest_records_1['model_prompt_id'].isin(unique_values)]
 
     latest_records_1 = latest_records_1.sort_values(by=['prompt', 'model'])
     latest_records_1['output'] = latest_records_1['output'].str.replace('\n', ' ')
     
     result = pd.merge(latest_records, latest_records_1, on=["model","prompt"])
-    result.drop(columns=['MODEL_ID_PROMP_ID_y'], inplace=True)
+    result.drop(columns=['model_prompt_id_y'], inplace=True)
     
     return result
 
@@ -132,7 +132,7 @@ def main():
                 
                 for i in range(len(df)): 
                     key = {
-                        'MODEL_ID_PROMP_ID': {'S': df.loc[i,'MODEL_ID_PROMP_ID_x']},
+                        'model_prompt_id': {'S': df.loc[i,'model_prompt_id_x']},
                         'Date': {'S': str(df.loc[i,'Date_x']).split()[0]}
                     }
 

@@ -41,52 +41,56 @@ def get_prompt_result(model_id,body):
     elapsed_time = end_time - start_time
     return json.loads(resp['body'].read()), elapsed_time
 
-def put_item_anthropic(model, response, today_date, resp, elapsed_time):
+def put_item_anthropic(model, response, today_date, resp, elapsed_time, model_shape):
     table.put_item(
     Item={
-        "MODEL_ID_PROMP_ID" : model + "_" + response['id'].get('S') ,
-        "Date" : str(today_date),
+        "model_prompt_id" : model + "_" + response['id'].get('S') ,
+        "date" : str(today_date),
         "token_size" : len(resp["completion"].replace(" ","")),
         "output" : resp["completion"],
         "output_hash" : computeMD5hash(resp["completion"]),
-        "PROMP_ID_MODEL_ID" : response['id'].get('S') + "_" + model,
-        "latency": str(elapsed_time)
+        "prompt_model_id" : response['id'].get('S') + "_" + model,
+        "latency": str(elapsed_time),
+        "model_config": str(model_shape)
     })
 
-def put_item_amazon(model, response, today_date, resp, elapsed_time):
+def put_item_amazon(model, response, today_date, resp, elapsed_time, model_shape):
     table.put_item(
         Item={
-            "MODEL_ID_PROMP_ID" : model + "_" + response['id'].get('S'),
-            "Date" : str(today_date),
+            "model_prompt_id" : model + "_" + response['id'].get('S'),
+            "date" : str(today_date),
             "token_size" : resp["results"][0]["tokenCount"],
             "output" : resp["results"][0]["outputText"],
             "output_hash" : computeMD5hash(resp["results"][0]["outputText"]),
-            "PROMP_ID_MODEL_ID" : response['id'].get('S') + "_" + model,
-            "latency": str(elapsed_time)
+            "prompt_model_id" : response['id'].get('S') + "_" + model,
+            "latency": str(elapsed_time),
+            "model_config": str(model_shape)
     })  
 
-def put_item_ai21(model, response, today_date, resp, elapsed_time):
+def put_item_ai21(model, response, today_date, resp, elapsed_time, model_shape):
     table.put_item(
         Item={
-            "MODEL_ID_PROMP_ID" : model + "_" + response['id'].get('S') ,
-            "Date" : str(today_date),
+            "model_prompt_id" : model + "_" + response['id'].get('S') ,
+            "date" : str(today_date),
             "token_size" : len(resp["completions"][0]["data"]["tokens"]),
             "output" : resp["completions"][0]["data"]["text"],
             "output_hash" : computeMD5hash(resp["completions"][0]["data"]["text"]),
-            "PROMP_ID_MODEL_ID" : response['id'].get('S') + "_" + model,
-            "latency": str(elapsed_time)
+            "prompt_model_id" : response['id'].get('S') + "_" + model,
+            "latency": str(elapsed_time),
+            "model_config": str(model_shape)
     })
     
-def put_item_cohere(model, response, today_date, resp, elapsed_time): 
+def put_item_cohere(model, response, today_date, resp, elapsed_time, model_shape): 
     table.put_item(
         Item={
-            "MODEL_ID_PROMP_ID" : model + "_" + response['id'].get('S') ,
-            "Date" : str(today_date),
+            "model_prompt_id" : model + "_" + response['id'].get('S') ,
+            "date" : str(today_date),
             "token_size" : len(resp["generations"][0]["text"].replace(" ","")),
             "output" : resp["generations"][0]["text"],
             "output_hash" : computeMD5hash(resp["generations"][0]["text"]),
-            "PROMP_ID_MODEL_ID" : response['id'].get('S') + "_" + model,
-            "latency": str(elapsed_time)
+            "prompt_model_id" : response['id'].get('S') + "_" + model,
+            "latency": str(elapsed_time),
+            "model_config": str(model_shape)
     })
 
 
@@ -109,7 +113,7 @@ def try_prompts():
             
             data_old = []
             scan_kwargs = {
-                "FilterExpression": Attr('MODEL_ID_PROMP_ID').eq(f"{model}_{response['id'].get('S')}")
+                "FilterExpression": Attr('model_prompt_id').eq(f"{model}_{response['id'].get('S')}")
             }
             
             done = False
@@ -130,21 +134,21 @@ def try_prompts():
     
             elif model.startswith("amazon.titan"):
                 if len(data_old) == 0:
-                    put_item_amazon(model, response, today_date, resp, elapsed_time)
+                    put_item_amazon(model, response, today_date, resp, elapsed_time, model_shape)
                 elif computeMD5hash(resp["results"][0]["outputText"]) != data_old[-1]['output_hash']:
-                    put_item_amazon(model, response, today_date, resp, elapsed_time)
+                    put_item_amazon(model, response, today_date, resp, elapsed_time, model_shape)
             
             elif model.startswith("ai21"):
                 if len(data_old) == 0:
-                    put_item_ai21(model, response, today_date, resp, elapsed_time)
+                    put_item_ai21(model, response, today_date, resp, elapsed_time, model_shape)
                 elif computeMD5hash(resp["completions"][0]["data"]["text"]) != data_old[-1]['output_hash']:
-                    put_item_ai21(model, response, today_date, resp, elapsed_time)
+                    put_item_ai21(model, response, today_date, resp, elapsed_time, model_shape)
                 
             elif model.startswith("cohere"):
                 if len(data_old) == 0:
-                    put_item_cohere(model, response, today_date, resp, elapsed_time)
+                    put_item_cohere(model, response, today_date, resp, elapsed_time, model_shape)
                 elif computeMD5hash(resp["generations"][0]["text"]) != data_old[-1]['output_hash']:
-                    put_item_cohere(model, response, today_date, resp, elapsed_time)
+                    put_item_cohere(model, response, today_date, resp, elapsed_time, model_shape)
 
 def lambda_handler(event, context):
 

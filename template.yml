@@ -107,22 +107,22 @@ Resources:
     Properties:
       TableName: bedrockbenchmark
       AttributeDefinitions:
-        - AttributeName: MODEL_ID_PROMP_ID
+        - AttributeName: model_prompt_id
           AttributeType: S
-        - AttributeName: Date
+        - AttributeName: date
           AttributeType: S
-        - AttributeName: PROMP_ID_MODEL_ID
+        - AttributeName: prompt_model_id
           AttributeType: S
       KeySchema:
-        - AttributeName: MODEL_ID_PROMP_ID
+        - AttributeName: model_prompt_id
           KeyType: HASH
-        - AttributeName: Date
+        - AttributeName: date
           KeyType: RANGE
       BillingMode: PAY_PER_REQUEST
       GlobalSecondaryIndexes:
-        - IndexName: PROMP_ID_MODEL_ID_GSI
+        - IndexName: prompt_model_id_gsi
           KeySchema:
-            - AttributeName: PROMP_ID_MODEL_ID
+            - AttributeName: prompt_model_id
               KeyType: HASH
           Projection:
             ProjectionType: ALL
