@@ -1,11 +1,11 @@
 # Bedrock Benchmark
 This project contains source code and supporting files for a serverless application that you can deploy with the SAM CLI. It includes the following files and folders:
 
-- functions - Code for the application's Lambda functions to Call Bedrock APIs.
+- functions - Code for the application's Lambda functions to Call Bedrock APIs and populate the sample prompt catalog in DynamoDB.
 - statemachines - Definition for the state machine that orchestrates the bedrock benchmark workflow.
 - template.yaml - A template that defines the application's AWS resources.
-- scripts - The folder than contains script to populate the prompt repository in DynamoDB
-- srteamlit_app - The folder that contains code to setup and run an stramlit app to collect human feedback on LLM response
+- scripts - The folder than contains script to update/modify the prompt catalog in DynamoDB
+- srteamlit_app - The folder that contains code to setup and run an streamlit app in SageMaker Studio to collect human feedback on LLM response
 
 This application creates a bedrock bemchmark workflow which runs on a pre-defined schedule. The application uses several AWS resources, including Step Functions state machines, DynamoDB, Lambda functions and an EventBridge rule trigger. These resources are defined in the template.yaml file in this project. You can update the template to add AWS resources through the same deployment process that updates your application code.
 
