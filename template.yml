@@ -33,7 +33,7 @@ Resources:
   AnthropicFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: functions/
+      CodeUri: functions/main/
       Handler: app.lambda_handler
       Runtime: python3.12
       Architectures:
@@ -51,7 +51,7 @@ Resources:
   CohereFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: functions/
+      CodeUri: functions/main/
       Handler: app.lambda_handler
       Runtime: python3.12
       Architectures:
@@ -69,7 +69,7 @@ Resources:
   Ai21Function:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: functions/
+      CodeUri: functions/main/
       Handler: app.lambda_handler
       Runtime: python3.12
       Architectures:
@@ -87,7 +87,7 @@ Resources:
   AmazonFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: functions/
+      CodeUri: functions/main/
       Handler: app.lambda_handler
       Runtime: python3.12
       Architectures:
@@ -142,6 +142,23 @@ Resources:
         - AttributeName: prompt
           KeyType: RANGE
       BillingMode: PAY_PER_REQUEST
+
+  DynamodbUpsertFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/dynamodb/
+      Handler: app.lambda_handler
+      Policies: arn:aws:iam::aws:policy/AdministratorAccess
+      Runtime: 'python3.12'
+      Timeout: 60
+      Architectures:
+        - x86_64
+  
+  DdbInsertCustomFunction:
+    Type: Custom::DdbInsertCustomFunction
+    Properties:
+      ServiceToken: !GetAtt DynamodbUpsertFunction.Arn
+      TableName: !Ref BedrockBenchmarkPromptsTable
 
 Outputs:
   benchmarktable:

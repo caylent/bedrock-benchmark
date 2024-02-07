@@ -30,7 +30,7 @@ In the current solution the following metrics are collected for each model:
 - model parameters for invokation
 
 ## Prompt Repository
-After successfully deploying the solution you need to run the 'create_prompt_catalog.py' inside /scripts folder to populate the example prompts. You can always re-run the scripts to add/modify the prompt list at any time.
+Sample prompts are added to a dynamodb table as the prompt catalog. You can run the 'create_prompt_catalog.py' inside /scripts folder to add/modify the prompt list at any time.
 
 ## UI
 We used Streamlit for a simple UI and deployed it to SageMaker Studio. Follow these steps to run the streamlit app.
