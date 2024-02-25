@@ -1,1 +1,4 @@
 **/.DS_Store
+.aws-sam
+streamlit_app/temp.txt
+pkg-installer.xml
