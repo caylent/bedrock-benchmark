@@ -31,9 +31,9 @@ def fetch_data():
     df = pd.json_normalize(response['Items'])
 
     if 'Rating' in df.columns:
-        df1 = df.drop(columns=['output_hash', 'token_size', 'prompt_model_id', 'Rating'])
+        df1 = df.drop(columns=['output_hash', 'output_token_count', 'input_token_count', 'prompt_model_id', 'Rating'])
     else:
-        df1 = df.drop(columns=['output_hash', 'token_size', 'prompt_model_id'])
+        df1 = df.drop(columns=['output_hash', 'output_token_count', 'input_token_count', 'prompt_model_id'])
 
     df2 = pd.DataFrame(df.model_prompt_id.str.split('_',1).tolist(),
                                      columns = ['model','prompt'])
@@ -53,7 +53,7 @@ def fetch_data():
 
     unique_values = latest_records['model_prompt_id'].values
     
-    # get the latest record per model/prompt category
+    # get the prior record per model/prompt category
     latest_records_1 = df4.sort_values(by=['date'], ascending=False).groupby(['model','prompt']).nth(1)
     latest_records_1.reset_index(inplace=True)
 
@@ -63,8 +63,8 @@ def fetch_data():
     latest_records_1 = latest_records_1.sort_values(by=['prompt', 'model'])
     latest_records_1['output'] = latest_records_1['output'].str.replace('\n', ' ')
     
-    result = pd.merge(latest_records, latest_records_1, on=["model","prompt"])
-    result.drop(columns=['model_prompt_id_y'], inplace=True)
+    result = pd.merge(latest_records, latest_records_1[['prompt','model','date','output']], on=["model","prompt"])
+    result.drop(columns=['model_config', 'model_prompt_id'], inplace=True)
     
     return result
 
@@ -116,7 +116,7 @@ def main():
     
     df = fetch_data()
     
-    #df = df.head(n=3)
+
     # add rating column to store user feedback
     df['rating'] = ''
     # go through the rows in the csv file and display them one by one
@@ -132,7 +132,7 @@ def main():
                 
                 for i in range(len(df)): 
                     key = {
-                        'model_prompt_id': {'S': df.loc[i,'model_prompt_id_x']},
+                        'model_prompt_id': {'S': df.loc[i,'model'] + '_' +df.loc[i,'prompt']},
                         'Date': {'S': str(df.loc[i,'Date_x']).split()[0]}
                     }
 
@@ -155,10 +155,14 @@ def main():
 
     with col2:
         row1.header("latest response")
-        row1.markdown(df.iloc[st.session_state.row_index, 3], unsafe_allow_html=True)
+        row1.markdown(df.loc[st.session_state.row_index, "output_x"], unsafe_allow_html=True)
 
         row2.header("previous response")
-        row2.markdown(df.iloc[st.session_state.row_index, 6], unsafe_allow_html=True)
+        if (df.date_x != df.date_y).all():
+            row2.markdown(df.iloc[st.session_state.row_index, "output_y"], unsafe_allow_html=True)
+        else:
+            row2.markdown("no prior evaluation exist yet", unsafe_allow_html=True)
+        
         
     # collect teh user feedback
     with col4:

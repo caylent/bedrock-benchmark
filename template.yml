@@ -13,6 +13,7 @@ Resources:
         AmazonFunctionArn: !GetAtt AmazonFunction.Arn
         CohereFunctionArn: !GetAtt CohereFunction.Arn
         Ai21FunctionArn: !GetAtt Ai21Function.Arn
+        MetaFunctionArn: !GetAtt MetaFunction.Arn
       Events:
         DailyBenchmarkingSchedule:
           Type: Schedule
@@ -29,7 +30,9 @@ Resources:
             FunctionName: !Ref Ai21Function
         - LambdaInvokePolicy:
             FunctionName: !Ref AmazonFunction
-  
+        - LambdaInvokePolicy:
+            FunctionName: !Ref MetaFunction
+
   AnthropicFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -38,13 +41,13 @@ Resources:
       Runtime: python3.12
       Architectures:
         - x86_64
-      Timeout: 600
+      Timeout: 900
       MemorySize: 150
       Policies: arn:aws:iam::aws:policy/AdministratorAccess
       Environment:
         Variables:
           model_shape: '{"prompt": "", "temperature": 1.0, "top_p": 1.0, "top_k": 250, "max_tokens_to_sample": 2048, "stop_sequences": ["\n\nHuman:"]}'
-          supported_models: '["anthropic.claude-instant-v1", "anthropic.claude-v2"]'
+          supported_models: '["anthropic.claude-instant-v1", "anthropic.claude-v2", "anthropic.claude-v2:1"]'
           benchmark_table: !Ref BedrockBenchmarkTable
           prompt_catalog: !Ref BedrockBenchmarkPromptsTable
 
@@ -99,6 +102,24 @@ Resources:
         Variables:
           model_shape: '{"inputText": "", "textGenerationConfig": {"temperature": 1.0, "topP": 1.0, "maxTokenCount": 4096, "stopSequences": []}}'
           supported_models: '["amazon.titan-tg1-large", "amazon.titan-text-express-v1"]'
+          benchmark_table: !Ref BedrockBenchmarkTable
+          prompt_catalog: !Ref BedrockBenchmarkPromptsTable
+
+  MetaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/main/
+      Handler: app.lambda_handler
+      Runtime: python3.12
+      Architectures:
+        - x86_64
+      Timeout: 600
+      MemorySize: 150
+      Policies: arn:aws:iam::aws:policy/AdministratorAccess
+      Environment:
+        Variables:
+          model_shape: '{"prompt": "", "max_gen_len":512, "temperature":0.5, "top_p":0.9}'
+          supported_models: '["meta.llama2-13b-chat-v1", "meta.llama2-70b-chat-v1"]'
           benchmark_table: !Ref BedrockBenchmarkTable
           prompt_catalog: !Ref BedrockBenchmarkPromptsTable
 

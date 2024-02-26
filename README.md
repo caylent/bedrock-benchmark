@@ -23,11 +23,20 @@ sam validate
 sam deploy --guided
 ```
 
+## Bedrock Model
+The following Bedrock base models for Text Generation are included for benchmarking.
+ - Amazon : Titan Express, Titan Large
+ - Anthropic :  Claude Instant V1, Claude V2, Claude V2.1
+ - Cohere : Cohere Command Text
+ - Jurassic : AI21 Ultra, AI21 Mid
+ - Meta : Llama2 13B Chat, Llama2 70B Chat
+
 ## Collected Metrics
-In the current solution the following metrics are collected for each model:
-- latency
-- output token size (if the output token size is part of the Bedrock api response otherwise number of characters)
-- model parameters for invokation
+The following metrics are collected for each invocation:
+- invocation latency
+- input token size
+- output token size
+- model inference parameters
 
 ## Prompt Repository
 Sample prompts are added to a dynamodb table as the prompt catalog. You can run the 'create_prompt_catalog.py' inside /scripts folder to add/modify the prompt list at any time.

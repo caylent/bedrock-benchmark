@@ -2,7 +2,7 @@ import boto3
 
 ddb = boto3.resource('dynamodb')
 
-
+# TODO: Update the prompts accordingly here
 prompts_to_test = {
     "code": [
         {
@@ -66,7 +66,6 @@ prompts_to_test = {
         },
     ],
 }
-
 
 table = ddb.Table('bedrockbenchmarkprompts')
 
