@@ -7,7 +7,7 @@ This project contains source code and supporting files for a serverless applicat
 - scripts - The folder than contains script to update/modify the prompt catalog in DynamoDB
 - srteamlit_app - The folder that contains code to setup and run an streamlit app in SageMaker Studio to collect human feedback on LLM response
 
-This application creates a bedrock bemchmark workflow which runs on a pre-defined schedule. The application uses several AWS resources, including Step Functions state machines, DynamoDB, Lambda functions and an EventBridge rule trigger. These resources are defined in the template.yaml file in this project. You can update the template to add AWS resources through the same deployment process that updates your application code.
+This application creates a bedrock benchmark workflow which runs on a pre-defined schedule. The application uses several AWS resources, including Step Functions state machines, DynamoDB, Lambda functions and an EventBridge rule trigger. These resources are defined in the template.yaml file in this project. You can update the template to add AWS resources through the same deployment process that updates your application code.
 
 ## Deploy the sample application
 To use the SAM CLI, you need the following tools:
