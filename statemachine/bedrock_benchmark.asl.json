@@ -1,152 +1,180 @@
 {
-    "Comment": "Bedrock Models Benchmark",
-    "StartAt": "Parallel",
-    "States": {
-      "Parallel": {
-        "Type": "Parallel",
-        "End": true,
-        "Branches": [
-          {
-            "StartAt": "Amazon Models",
-            "States": {
-              "Amazon Models": {
-                "Type": "Task",
-                "Resource": "arn:aws:states:::lambda:invoke",
-                "OutputPath": "$.Payload",
-                "Parameters": {
-                  "Payload.$": "$",
-                  "FunctionName": "${AmazonFunctionArn}"
-                },
-                "Retry": [
-                  {
-                    "ErrorEquals": [
-                      "Lambda.ServiceException",
-                      "Lambda.AWSLambdaException",
-                      "Lambda.SdkClientException",
-                      "Lambda.TooManyRequestsException"
-                    ],
-                    "IntervalSeconds": 1,
-                    "MaxAttempts": 3,
-                    "BackoffRate": 2
-                  }
-                ],
-                "End": true
-              }
-            }
-          },
-          {
-            "StartAt": "Meta Models",
-            "States": {
-              "Meta Models": {
-                "Type": "Task",
-                "Resource": "arn:aws:states:::lambda:invoke",
-                "OutputPath": "$.Payload",
-                "Parameters": {
-                  "Payload.$": "$",
-                  "FunctionName": "${MetaFunctionArn}"
-                },
-                "Retry": [
-                  {
-                    "ErrorEquals": [
-                      "Lambda.ServiceException",
-                      "Lambda.AWSLambdaException",
-                      "Lambda.SdkClientException",
-                      "Lambda.TooManyRequestsException"
-                    ],
-                    "IntervalSeconds": 1,
-                    "MaxAttempts": 3,
-                    "BackoffRate": 2
-                  }
-                ],
-                "End": true
-              }
-            }
-          },
-          {
-            "StartAt": "Anthropic Models",
-            "States": {
-              "Anthropic Models": {
-                "Type": "Task",
-                "Resource": "arn:aws:states:::lambda:invoke",
-                "OutputPath": "$.Payload",
-                "Parameters": {
-                  "Payload.$": "$",
-                  "FunctionName": "${AnthropicFunctionArn}"
-                },
-                "Retry": [
-                  {
-                    "ErrorEquals": [
-                      "Lambda.ServiceException",
-                      "Lambda.AWSLambdaException",
-                      "Lambda.SdkClientException",
-                      "Lambda.TooManyRequestsException"
-                    ],
-                    "IntervalSeconds": 1,
-                    "MaxAttempts": 3,
-                    "BackoffRate": 2
-                  }
-                ],
-                "End": true
-              }
-            }
-          },
-          {
-            "StartAt": "Cohere Models",
-            "States": {
-              "Cohere Models": {
-                "Type": "Task",
-                "Resource": "arn:aws:states:::lambda:invoke",
-                "OutputPath": "$.Payload",
-                "Parameters": {
-                  "Payload.$": "$",
-                  "FunctionName": "${CohereFunctionArn}"
-                },
-                "Retry": [
-                  {
-                    "ErrorEquals": [
-                      "Lambda.ServiceException",
-                      "Lambda.AWSLambdaException",
-                      "Lambda.SdkClientException",
-                      "Lambda.TooManyRequestsException"
-                    ],
-                    "IntervalSeconds": 1,
-                    "MaxAttempts": 3,
-                    "BackoffRate": 2
-                  }
-                ],
-                "End": true
-              }
-            }
-          },
-          {
-            "StartAt": "AI21 Models",
-            "States": {
-              "AI21 Models": {
-                "Type": "Task",
-                "Resource": "arn:aws:states:::lambda:invoke",
-                "OutputPath": "$.Payload",
-                "Parameters": {
-                  "Payload.$": "$",
-                  "FunctionName": "${Ai21FunctionArn}"
-                },
-                "Retry": [
-                  {
-                    "ErrorEquals": [
-                      "Lambda.ServiceException",
-                      "Lambda.AWSLambdaException",
-                      "Lambda.SdkClientException",
-                      "Lambda.TooManyRequestsException"
-                    ],
-                    "IntervalSeconds": 1,
-                    "MaxAttempts": 3,
-                    "BackoffRate": 2
-                  }
-                ],
-                "End": true
-              }
+  "Comment": "Bedrock Models Benchmark",
+  "StartAt": "Parallel",
+  "States": {
+    "Parallel": {
+      "Type": "Parallel",
+      "End": true,
+      "Branches": [
+        {
+          "StartAt": "Mistral Models",
+          "States": {
+            "Mistral Models": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "OutputPath": "$.Payload",
+              "Parameters": {
+                "Payload.$": "$",
+                "FunctionName": "${MistralFunctionArn}"
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException",
+                    "Lambda.TooManyRequestsException"
+                  ],
+                  "IntervalSeconds": 1,
+                  "MaxAttempts": 3,
+                  "BackoffRate": 2
+                }
+              ],
+              "End": true
             }
           }
-        ]
-      }
+        },
+        {
+          "StartAt": "Amazon Models",
+          "States": {
+            "Amazon Models": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "OutputPath": "$.Payload",
+              "Parameters": {
+                "Payload.$": "$",
+                "FunctionName": "${AmazonFunctionArn}"
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException",
+                    "Lambda.TooManyRequestsException"
+                  ],
+                  "IntervalSeconds": 1,
+                  "MaxAttempts": 3,
+                  "BackoffRate": 2
+                }
+              ],
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "Meta Models",
+          "States": {
+            "Meta Models": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "OutputPath": "$.Payload",
+              "Parameters": {
+                "Payload.$": "$",
+                "FunctionName": "${MetaFunctionArn}"
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException",
+                    "Lambda.TooManyRequestsException"
+                  ],
+                  "IntervalSeconds": 1,
+                  "MaxAttempts": 3,
+                  "BackoffRate": 2
+                }
+              ],
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "Anthropic Models",
+          "States": {
+            "Anthropic Models": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "OutputPath": "$.Payload",
+              "Parameters": {
+                "Payload.$": "$",
+                "FunctionName": "${AnthropicFunctionArn}"
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException",
+                    "Lambda.TooManyRequestsException"
+                  ],
+                  "IntervalSeconds": 1,
+                  "MaxAttempts": 3,
+                  "BackoffRate": 2
+                }
+              ],
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "Cohere Models",
+          "States": {
+            "Cohere Models": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "OutputPath": "$.Payload",
+              "Parameters": {
+                "Payload.$": "$",
+                "FunctionName": "${CohereFunctionArn}"
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException",
+                    "Lambda.TooManyRequestsException"
+                  ],
+                  "IntervalSeconds": 1,
+                  "MaxAttempts": 3,
+                  "BackoffRate": 2
+                }
+              ],
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "AI21 Models",
+          "States": {
+            "AI21 Models": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke",
+              "OutputPath": "$.Payload",
+              "Parameters": {
+                "Payload.$": "$",
+                "FunctionName": "${Ai21FunctionArn}"
+              },
+              "Retry": [
+                {
+                  "ErrorEquals": [
+                    "Lambda.ServiceException",
+                    "Lambda.AWSLambdaException",
+                    "Lambda.SdkClientException",
+                    "Lambda.TooManyRequestsException"
+                  ],
+                  "IntervalSeconds": 1,
+                  "MaxAttempts": 3,
+                  "BackoffRate": 2
+                }
+              ],
+              "End": true
+            }
+          }
+        }
+      ]
     }
   }
+}

@@ -13,8 +13,7 @@ from botocore.config import Config
 config = Config(
    retries = {
       'max_attempts': 5,
-      'mode': 'standard',
-      "read_timeout": 1000
+      'mode': 'standard'
    }
 )
 
@@ -47,7 +46,7 @@ def get_prompt_result(model_id,body):
     print(body)
     resp = bedrock_runtime.invoke_model(modelId=model_id, body=body)
     return json.loads(resp['body'].read()), resp
-
+    
 def put_item_anthropic(model, response, today_date, resp, metadata, model_shape):
     table.put_item(
     Item={

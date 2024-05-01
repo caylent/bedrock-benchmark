@@ -140,7 +140,7 @@ Resources:
       Environment:
         Variables:
           model_shape: '{"prompt": "", "max_tokens":4000, "temperature":0.5, "top_p":0.9, "top_k":50 }'
-          supported_models: '["mistral.mistral-7b-instruct-v0:2", "mistral.mixtral-8x7b-instruct-v0:1", "mistral.mistral-large-2402-v1:0"]'
+          supported_models: '["mistral.mistral-7b-instruct-v0:2", "mistral.mixtral-8x7b-instruct-v0:1"]'
           benchmark_table: !Ref BedrockBenchmarkTable
           prompt_catalog: !Ref BedrockBenchmarkPromptsTable
 

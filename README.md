@@ -29,7 +29,8 @@ The following Bedrock base models for Text Generation are included for benchmark
  - Jurassic : AI21 Ultra, AI21 Mid
  - Amazon : Titan Express, Titan Large
  - Meta : Llama2 13B Chat, Llama2 70B Chat, Llama3 8B Instruct, Llama3 70B Instruct
- - Anthropic :  Claude Instant V1, Claude V2, Claude V2.1, Claude Sonnet, Claude Haiku, Claude Opus 
+ - Anthropic :  Claude Instant V1, Claude V2, Claude V2.1, Claude Sonnet, Claude Haiku, Claude Opus
+ - Mistral: Mistral-7b-instruct, Mixtral-8x7b-instruct 
 
 ## Collected Metrics
 The following metrics are collected for each invocation:
