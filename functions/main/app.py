@@ -7,10 +7,20 @@ import hashlib
 from datetime import date
 import os
 import ast
+from botocore.config import Config
+
+
+config = Config(
+   retries = {
+      'max_attempts': 5,
+      'mode': 'standard',
+      "read_timeout": 1000
+   }
+)
 
 
 bedrock = boto3.client("bedrock")
-bedrock_runtime = boto3.client("bedrock-runtime")
+bedrock_runtime = boto3.client("bedrock-runtime", config=config)
 ddb = boto3.resource('dynamodb')
 dynamodb = boto3.client('dynamodb')
 
@@ -44,8 +54,8 @@ def put_item_anthropic(model, response, today_date, resp, metadata, model_shape)
         "model_prompt_id" : model + "_" + response['id'].get('S') ,
         "date" : str(today_date),
         "output_token_count" : metadata["ResponseMetadata"]["HTTPHeaders"]["x-amzn-bedrock-output-token-count"],
-        "output" : resp["completion"],
-        "output_hash" : computeMD5hash(resp["completion"]),
+        "output" : resp["content"][0]["text"],
+        "output_hash" : computeMD5hash(resp["content"][0]["text"]),
         "prompt_model_id" : response['id'].get('S') + "_" + model,
         "latency" : metadata["ResponseMetadata"]["HTTPHeaders"]["x-amzn-bedrock-invocation-latency"],
         "model_config": str(model_shape),
@@ -81,19 +91,33 @@ def put_item_ai21(model, response, today_date, resp, metadata, model_shape):
             "input_token_count" : metadata["ResponseMetadata"]["HTTPHeaders"]["x-amzn-bedrock-input-token-count"]
     })
     
-def put_item_cohere(model, response, today_date, resp, metadata, model_shape): 
-    table.put_item(
-        Item={
-            "model_prompt_id" : model + "_" + response['id'].get('S') ,
-            "date" : str(today_date),
-            "output_token_count" : metadata["ResponseMetadata"]["HTTPHeaders"]["x-amzn-bedrock-output-token-count"],
-            "output" : resp["generations"][0]["text"],
-            "output_hash" : computeMD5hash(resp["generations"][0]["text"]),
-            "prompt_model_id" : response['id'].get('S') + "_" + model,
-            "latency" : metadata["ResponseMetadata"]["HTTPHeaders"]["x-amzn-bedrock-invocation-latency"],
-            "model_config": str(model_shape),
-            "input_token_count" : metadata["ResponseMetadata"]["HTTPHeaders"]["x-amzn-bedrock-input-token-count"]
-    })
+def put_item_cohere(model, response, today_date, resp, metadata, model_shape):
+    if model.startswith("cohere.command-text"):
+        table.put_item(
+            Item={
+                "model_prompt_id" : model + "_" + response['id'].get('S') ,
+                "date" : str(today_date),
+                "output_token_count" : metadata["ResponseMetadata"]["HTTPHeaders"]["x-amzn-bedrock-output-token-count"],
+                "output" : resp["generations"][0]["text"],
+                "output_hash" : computeMD5hash(resp["generations"][0]["text"]),
+                "prompt_model_id" : response['id'].get('S') + "_" + model,
+                "latency" : metadata["ResponseMetadata"]["HTTPHeaders"]["x-amzn-bedrock-invocation-latency"],
+                "model_config": str(model_shape[0]),
+                "input_token_count" : metadata["ResponseMetadata"]["HTTPHeaders"]["x-amzn-bedrock-input-token-count"]
+        })
+    else:
+        table.put_item(
+            Item={
+                "model_prompt_id" : model + "_" + response['id'].get('S') ,
+                "date" : str(today_date),
+                "output_token_count" : metadata["ResponseMetadata"]["HTTPHeaders"]["x-amzn-bedrock-output-token-count"],
+                "output" : resp["text"],
+                "output_hash" : computeMD5hash(resp["text"]),
+                "prompt_model_id" : response['id'].get('S') + "_" + model,
+                "latency" : metadata["ResponseMetadata"]["HTTPHeaders"]["x-amzn-bedrock-invocation-latency"],
+                "model_config": str(model_shape[1]),
+                "input_token_count" : metadata["ResponseMetadata"]["HTTPHeaders"]["x-amzn-bedrock-input-token-count"]
+        })
 
 def put_item_meta(model, response, today_date, resp, metadata, model_shape): 
     table.put_item(
@@ -109,6 +133,20 @@ def put_item_meta(model, response, today_date, resp, metadata, model_shape):
             "input_token_count" : metadata["ResponseMetadata"]["HTTPHeaders"]["x-amzn-bedrock-input-token-count"]
     })
 
+def put_item_mistral(model, response, today_date, resp, metadata, model_shape):
+    table.put_item(
+    Item={
+        "model_prompt_id" : model + "_" + response['id'].get('S') ,
+        "date" : str(today_date),
+        "output_token_count" : metadata["ResponseMetadata"]["HTTPHeaders"]["x-amzn-bedrock-output-token-count"],
+        "output" : resp['outputs'][0]['text'],
+        "output_hash" : computeMD5hash(resp['outputs'][0]['text']),
+        "prompt_model_id" : response['id'].get('S') + "_" + model,
+        "latency" : metadata["ResponseMetadata"]["HTTPHeaders"]["x-amzn-bedrock-invocation-latency"],
+        "model_config": str(model_shape),
+        "input_token_count" : metadata["ResponseMetadata"]["HTTPHeaders"]["x-amzn-bedrock-input-token-count"]
+    })
+
 def try_prompts():
     for response in response_s["Items"]:
         for model in supported_models:
@@ -116,14 +154,21 @@ def try_prompts():
             body = model_shape.copy()
 
             if model.startswith("anthropic"):
-                body["prompt"] = f"\n\nHuman:{response['prompt'].get('S')}\n\nAssistant:"
+                #body["prompt"] = f"\n\nHuman:{response['prompt'].get('S')}\n\nAssistant:"
+                body["messages"][0]["content"] = response['prompt'].get('S')
             elif model.startswith("amazon.titan"):
                 body["inputText"] = response['prompt'].get('S')
             elif model.startswith("ai21"):
                 body["prompt"] = response['prompt'].get('S')
-            elif model.startswith("cohere"):
+            elif model.startswith("cohere.command-text"):
+                body = body[0]
                 body["prompt"] = response['prompt'].get('S')
+            elif model.startswith("cohere.command-r"):
+                body = body[1]
+                body["message"] = response['prompt'].get('S')
             elif model.startswith("meta"):
+                body["prompt"] = response['prompt'].get('S')
+            elif model.startswith("mistral"):
                 body["prompt"] = response['prompt'].get('S')
             
             resp, metadata = get_prompt_result(model, body)
@@ -172,6 +217,12 @@ def try_prompts():
                     put_item_meta(model, response, today_date, resp, metadata, model_shape)
                 elif computeMD5hash(resp["generation"].lstrip()) != data_old[-1]['output_hash']:
                     put_item_meta(model, response, today_date, resp, metadata, model_shape)
+
+            elif model.startswith("mistral"):
+                if len(data_old) == 0:
+                    put_item_mistral(model, response, today_date, resp, metadata, model_shape)
+                elif computeMD5hash(resp["generation"].lstrip()) != data_old[-1]['output_hash']:
+                    put_item_mistral(model, response, today_date, resp, metadata, model_shape)
 
 def lambda_handler(event, context):
 
