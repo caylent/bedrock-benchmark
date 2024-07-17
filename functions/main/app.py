@@ -1,177 +1,233 @@
-import streamlit as st
-import pandas as pd
-from datetime import timedelta, datetime
 import boto3
+from boto3.dynamodb.conditions import Attr
+import json
+import pandas as pd
+import time
+import hashlib
+from datetime import date
+import os
+import ast
+from botocore.config import Config
 
+
+config = Config(
+   retries = {
+      'max_attempts': 5,
+      'mode': 'standard'
+   }
+)
+
+
+bedrock = boto3.client("bedrock")
+bedrock_runtime = boto3.client("bedrock-runtime", config=config)
 ddb = boto3.resource('dynamodb')
 dynamodb = boto3.client('dynamodb')
 
-def fetch_prompts():
-    prompt_table = ddb.Table('bedrockbenchmarkprompts')
+response_s = dynamodb.scan(
+    TableName=os.environ['prompt_catalog'])
 
-    prompts = prompt_table.scan()
+table = ddb.Table(os.environ['benchmark_table'])
 
-    df = pd.json_normalize(prompts['Items'])
+model_shape = json.loads(os.environ['model_shape'])
+model_shape = ast.literal_eval(str(model_shape))
+ 
+supported_models = os.environ['supported_models']
+supported_models = ast.literal_eval(supported_models)
 
-    return df
+today_date = date.today()
 
-def fetch_data():
+def computeMD5hash(my_string):
+    m = hashlib.md5()
+    m.update(my_string.encode('utf-8'))
+    return m.hexdigest()
+
+def get_prompt_result(model_id,body):
+    body = json.dumps(body)
+    print(body)
+    resp = bedrock_runtime.invoke_model(modelId=model_id, body=body)
+    return json.loads(resp['body'].read()), resp
     
-    table = ddb.Table('bedrockbenchmark')
+def put_item_anthropic(model, response, today_date, resp, metadata, model_shape):
+    table.put_item(
+    Item={
+        "model_prompt_id" : model + "_" + response['id'].get('S') ,
+        "date" : str(today_date),
+        "output_token_count" : metadata["ResponseMetadata"]["HTTPHeaders"]["x-amzn-bedrock-output-token-count"],
+        "output" : resp["content"][0]["text"],
+        "output_hash" : computeMD5hash(resp["content"][0]["text"]),
+        "prompt_model_id" : response['id'].get('S') + "_" + model,
+        "latency" : metadata["ResponseMetadata"]["HTTPHeaders"]["x-amzn-bedrock-invocation-latency"],
+        "model_config": str(model_shape),
+        "input_token_count" : metadata["ResponseMetadata"]["HTTPHeaders"]["x-amzn-bedrock-input-token-count"]
+    })
 
-    response = table.scan()
+def put_item_amazon(model, response, today_date, resp, metadata, model_shape):
+    table.put_item(
+        Item={
+            "model_prompt_id" : model + "_" + response['id'].get('S'),
+            "date" : str(today_date),
+            "output_token_count" : metadata["ResponseMetadata"]["HTTPHeaders"]["x-amzn-bedrock-output-token-count"],
+            "output" : resp["results"][0]["outputText"],
+            "output_hash" : computeMD5hash(resp["results"][0]["outputText"]),
+            "prompt_model_id" : response['id'].get('S') + "_" + model,
+            "latency" : metadata["ResponseMetadata"]["HTTPHeaders"]["x-amzn-bedrock-invocation-latency"],
+            "model_config": str(model_shape),
+            "input_token_count" : metadata["ResponseMetadata"]["HTTPHeaders"]["x-amzn-bedrock-input-token-count"],
+            
+    })  
 
-    data = response['Items']
-    while 'LastEvaluatedKey' in response:
-        response = table.scan(
-            ExclusiveStartKey=response['LastEvaluatedKey']
-            )
-    data.extend(response['Items'])
+def put_item_ai21(model, response, today_date, resp, metadata, model_shape):
+    table.put_item(
+        Item={
+            "model_prompt_id" : model + "_" + response['id'].get('S') ,
+            "date" : str(today_date),
+            "output_token_count" : metadata["ResponseMetadata"]["HTTPHeaders"]["x-amzn-bedrock-output-token-count"],
+            "output" : resp["completions"][0]["data"]["text"],
+            "output_hash" : computeMD5hash(resp["completions"][0]["data"]["text"]),
+            "prompt_model_id" : response['id'].get('S') + "_" + model,
+            "latency" : metadata["ResponseMetadata"]["HTTPHeaders"]["x-amzn-bedrock-invocation-latency"],
+            "model_config": str(model_shape),
+            "input_token_count" : metadata["ResponseMetadata"]["HTTPHeaders"]["x-amzn-bedrock-input-token-count"]
+    })
     
-    df = pd.json_normalize(response['Items'])
-
-    if 'Rating' in df.columns:
-        df1 = df.drop(columns=['output_hash', 'output_token_count', 'input_token_count', 'prompt_model_id', 'Rating'])
+def put_item_cohere(model, response, today_date, resp, metadata, model_shape):
+    if model.startswith("cohere.command-text"):
+        table.put_item(
+            Item={
+                "model_prompt_id" : model + "_" + response['id'].get('S') ,
+                "date" : str(today_date),
+                "output_token_count" : metadata["ResponseMetadata"]["HTTPHeaders"]["x-amzn-bedrock-output-token-count"],
+                "output" : resp["generations"][0]["text"],
+                "output_hash" : computeMD5hash(resp["generations"][0]["text"]),
+                "prompt_model_id" : response['id'].get('S') + "_" + model,
+                "latency" : metadata["ResponseMetadata"]["HTTPHeaders"]["x-amzn-bedrock-invocation-latency"],
+                "model_config": str(model_shape[0]),
+                "input_token_count" : metadata["ResponseMetadata"]["HTTPHeaders"]["x-amzn-bedrock-input-token-count"]
+        })
     else:
-        df1 = df.drop(columns=['output_hash', 'output_token_count', 'input_token_count', 'prompt_model_id'])
-    
-    df2 = df['model_prompt_id'].str.split('_', n=1, expand=True)
-    df2.columns = ['model','prompt']
-    
-    df3 = pd.concat([df1,df2], axis=1)
+        table.put_item(
+            Item={
+                "model_prompt_id" : model + "_" + response['id'].get('S') ,
+                "date" : str(today_date),
+                "output_token_count" : metadata["ResponseMetadata"]["HTTPHeaders"]["x-amzn-bedrock-output-token-count"],
+                "output" : resp["text"],
+                "output_hash" : computeMD5hash(resp["text"]),
+                "prompt_model_id" : response['id'].get('S') + "_" + model,
+                "latency" : metadata["ResponseMetadata"]["HTTPHeaders"]["x-amzn-bedrock-invocation-latency"],
+                "model_config": str(model_shape[1]),
+                "input_token_count" : metadata["ResponseMetadata"]["HTTPHeaders"]["x-amzn-bedrock-input-token-count"]
+        })
 
+def put_item_meta(model, response, today_date, resp, metadata, model_shape): 
+    table.put_item(
+        Item={
+            "model_prompt_id" : model + "_" + response['id'].get('S') ,
+            "date" : str(today_date),
+            "output_token_count" : metadata["ResponseMetadata"]["HTTPHeaders"]["x-amzn-bedrock-output-token-count"],
+            "output" : resp["generation"].lstrip(),
+            "output_hash" : computeMD5hash(resp["generation"].lstrip()),
+            "prompt_model_id" : response['id'].get('S') + "_" + model,
+            "latency" : metadata["ResponseMetadata"]["HTTPHeaders"]["x-amzn-bedrock-invocation-latency"],
+            "model_config": str(model_shape),
+            "input_token_count" : metadata["ResponseMetadata"]["HTTPHeaders"]["x-amzn-bedrock-input-token-count"]
+    })
 
-    df4 = df3.copy()
-    
-    df4 = df4.drop_duplicates(subset=['date', 'model', 'prompt']).reset_index(drop=True)
-    
-    
-    # get the latest record per model/prompt category
-    latest_records = df4.sort_values(by=['date'], ascending=False).groupby(['model','prompt']).nth(0)
-    latest_records.reset_index(inplace=True)
-    latest_records = latest_records.sort_values(by=['prompt', 'model'])
-    latest_records['output'] = latest_records['output'].str.replace('\n', ' ')
+def put_item_mistral(model, response, today_date, resp, metadata, model_shape):
+    table.put_item(
+    Item={
+        "model_prompt_id" : model + "_" + response['id'].get('S') ,
+        "date" : str(today_date),
+        "output_token_count" : metadata["ResponseMetadata"]["HTTPHeaders"]["x-amzn-bedrock-output-token-count"],
+        "output" : resp['outputs'][0]['text'],
+        "output_hash" : computeMD5hash(resp['outputs'][0]['text']),
+        "prompt_model_id" : response['id'].get('S') + "_" + model,
+        "latency" : metadata["ResponseMetadata"]["HTTPHeaders"]["x-amzn-bedrock-invocation-latency"],
+        "model_config": str(model_shape),
+        "input_token_count" : metadata["ResponseMetadata"]["HTTPHeaders"]["x-amzn-bedrock-input-token-count"]
+    })
 
-    unique_values = latest_records['model_prompt_id'].values
-    
-    # get the prior record per model/prompt category
-    latest_records_1 = df4.sort_values(by=['date'], ascending=False).groupby(['model','prompt']).nth(1)
-    latest_records_1.reset_index(inplace=True)
+def try_prompts():
+    for response in response_s["Items"]:
+        for model in supported_models:
+            print(f"\tModel: {model}")
+            body = model_shape.copy()
 
-    # only for the records in the latest dataframe (above)
-    latest_records_1 = latest_records_1[latest_records_1['model_prompt_id'].isin(unique_values)]
-
-    latest_records_1 = latest_records_1.sort_values(by=['prompt', 'model'])
-    latest_records_1['output'] = latest_records_1['output'].str.replace('\n', ' ')
-    
-    result = pd.merge(latest_records, latest_records_1[['prompt','model','date','output']], on=["model","prompt"])
-    result.drop(columns=['model_config', 'model_prompt_id'], inplace=True)
-    
-    return result
-
-
-def put_item(key, new_attributes):
-    table_name = 'bedrockbenchmark'
-    dynamodb.update_item(
-        TableName=table_name,
-        Key=key,
-        AttributeUpdates={
-            attribute_name: {
-                'Action': 'PUT',  # Use 'PUT' to add or update attributes
-                'Value': attribute_value
+            if model.startswith("anthropic"):
+                #body["prompt"] = f"\n\nHuman:{response['prompt'].get('S')}\n\nAssistant:"
+                body["messages"][0]["content"] = response['prompt'].get('S')
+            elif model.startswith("amazon.titan"):
+                body["inputText"] = response['prompt'].get('S')
+            elif model.startswith("ai21"):
+                body["prompt"] = response['prompt'].get('S')
+            elif model.startswith("cohere.command-text"):
+                body = body[0]
+                body["prompt"] = response['prompt'].get('S')
+            elif model.startswith("cohere.command-r"):
+                body = body[1]
+                body["message"] = response['prompt'].get('S')
+            elif model.startswith("meta"):
+                body["prompt"] = response['prompt'].get('S')
+            elif model.startswith("mistral"):
+                body["prompt"] = response['prompt'].get('S')
+            
+            resp, metadata = get_prompt_result(model, body)
+            
+            data_old = []
+            scan_kwargs = {
+                "FilterExpression": Attr('model_prompt_id').eq(f"{model}_{response['id'].get('S')}")
             }
-            for attribute_name, attribute_value in new_attributes.items()
-        }
-    )
-
-
-# Creating the Layout of the App
-st.set_page_config(layout="wide")
-
-st.write("<div style='text-align: center; padding: 20px; font-size: 24px;'>LLM Human-In-The-Loop Dashboard</div>", unsafe_allow_html=True)
-
-# columns
-col1, col2, col3 = st.columns(3)
-# rows
-row1, row2 = st.columns(2)
-
-col4, col5, col6 = st.columns(3)
-
-
-# Main Streamlit app
-def main():
+            
+            done = False
+            start_key = None
+            while not done:
+                if start_key:
+                    scan_kwargs["ExclusiveStartKey"] = start_key
+                response_old = table.scan(**scan_kwargs)
+                data_old.extend(response_old.get("Items", []))
+                start_key = response_old.get("LastEvaluatedKey", None)
+                done = start_key is None
+            
+            if model.startswith("anthropic"):
+                if len(data_old) == 0:
+                    put_item_anthropic(model, response, today_date, resp, metadata, model_shape)
+                elif computeMD5hash(resp["completion"]) != data_old[-1]['output_hash']:
+                    put_item_anthropic(model, response, today_date, resp, metadata, model_shape)
     
-    # Get or initialize session state for row index
-    if 'row_index' not in st.session_state:
-        st.session_state.row_index = 0 # Initialize row_index as 0
-    
-    # Get or initialize session state for user entries
-    if 'new_values' not in st.session_state:
-        st.session_state.new_values = []  # Initialize new_values as an empty list
-        
-    prompts = fetch_prompts()
-    
-    df = fetch_data()
-    
-
-    # add rating column to store user feedback
-    df['rating'] = ''
-    # go through the rows in the csv file and display them one by one
-    
-    with col6:        
-        if st.button("Next"):
-            if st.session_state.row_index < len(df) - 1:
-                st.session_state.row_index += 1
-            else:
-                st.warning("No more rows to display.")
-                df['rating'] = st.session_state.new_values
-                #df.to_csv('my_df.csv',index=False)
+            elif model.startswith("amazon.titan"):
+                if len(data_old) == 0:
+                    put_item_amazon(model, response, today_date, resp, metadata, model_shape)
+                elif computeMD5hash(resp["results"][0]["outputText"]) != data_old[-1]['output_hash']:
+                    put_item_amazon(model, response, today_date, resp, metadata, model_shape)
+            
+            elif model.startswith("ai21"):
+                if len(data_old) == 0:
+                    put_item_ai21(model, response, today_date, resp, metadata, model_shape)
+                elif computeMD5hash(resp["completions"][0]["data"]["text"]) != data_old[-1]['output_hash']:
+                    put_item_ai21(model, response, today_date, resp, metadata, model_shape)
                 
-                for i in range(len(df)): 
-                    key = {
-                        'model_prompt_id': {'S': df.loc[i,'model'] + '_' +df.loc[i,'prompt']},
-                        'Date': {'S': str(df.loc[i,'Date_x']).split()[0]}
-                    }
+            elif model.startswith("cohere"):
+                if len(data_old) == 0:
+                    put_item_cohere(model, response, today_date, resp, metadata, model_shape)
+                elif computeMD5hash(resp["generations"][0]["text"]) != data_old[-1]['output_hash']:
+                    put_item_cohere(model, response, today_date, resp, metadata, model_shape)
 
-                    # Create a dictionary with the new attribute(s) to add
-                    new_attributes = {
-                        'Rating': {'N': str(df.loc[i,'rating'])}
-                    }
-                    put_item(key, new_attributes)
-                    
-                st.success(f"DataFrame saved")
+            elif model.startswith("meta"):
+                if len(data_old) == 0:
+                    put_item_meta(model, response, today_date, resp, metadata, model_shape)
+                elif computeMD5hash(resp["generation"].lstrip()) != data_old[-1]['output_hash']:
+                    put_item_meta(model, response, today_date, resp, metadata, model_shape)
 
-                return
-    
-    # Display old and new responsess
-    st.write("model: ", df.iloc[st.session_state.row_index, 0])
-    st.write(f"{st.session_state.row_index+1} out of {len(df)}")
-    
+            elif model.startswith("mistral"):
+                if len(data_old) == 0:
+                    put_item_mistral(model, response, today_date, resp, metadata, model_shape)
+                elif computeMD5hash(resp["generation"].lstrip()) != data_old[-1]['output_hash']:
+                    put_item_mistral(model, response, today_date, resp, metadata, model_shape)
 
-    col1.markdown(prompts[prompts.id == df.iloc[st.session_state.row_index, 1] ]['prompt'].values[0], unsafe_allow_html=True)
+def lambda_handler(event, context):
 
-    with col2:
-        row1.header("latest response")
-        row1.markdown(df.loc[st.session_state.row_index, "output_x"], unsafe_allow_html=True)
+    try_prompts()
 
-        row2.header("previous response")
-        if (df.date_x != df.date_y).all():
-            row2.markdown(df.iloc[st.session_state.row_index, df.columns.get_loc("output_y")], unsafe_allow_html=True)
-        else:
-            row2.markdown("no prior evaluation exist yet", unsafe_allow_html=True)
-        
-        
-    # collect teh user feedback
-    with col4:
-        new_value = st.selectbox(f"**Choose 0 if 'INCORRECT', 1 if 'CORRECT' and 2 if 'EXCELLENT'**", [0, 1, 2], key=st.session_state.row_index)
-
-        
-    # remove duplicated entries due to the default value in the user entry
-    if new_value is not None:
-        if len(st.session_state.new_values) > st.session_state.row_index:
-            st.session_state.new_values[st.session_state.row_index] = new_value
-        else:
-            st.session_state.new_values.append(new_value)
-
-if __name__ == '__main__':
-    main()
+    return {
+        'statusCode': 200,
+        'body': json.dumps('Done!')
+    }

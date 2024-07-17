@@ -28,7 +28,7 @@ The following Bedrock base models for Text Generation are included for benchmark
  - Cohere : Command Text, Command-R, Command-R+
  - Jurassic : AI21 Ultra, AI21 Mid
  - Amazon : Titan Express, Titan Large
- - Meta : Llama2 70B Chat, Llama3 8B Instruct, Llama3 70B Instruct
+ - Meta : Llama2 13B Chat, Llama2 70B Chat, Llama3 8B Instruct, Llama3 70B Instruct
  - Anthropic :  Claude Instant V1, Claude V2, Claude V2.1, Claude Sonnet, Claude Haiku, Claude Opus
  - Mistral: Mistral-7b-instruct, Mixtral-8x7b-instruct 
 
