@@ -118,60 +118,64 @@ def main():
     df['rating'] = ''
     # go through the rows in the csv file and display them one by one
     
-    with col6:        
-        if st.button("Next"):
-            if st.session_state.row_index < len(df) - 1:
-                st.session_state.row_index += 1
+    if len(df) == 0:
+        st.write("no prior evaluation exist yet")
+        
+    else: 
+        with col6:        
+            if st.button("Next"):
+                if st.session_state.row_index < len(df) - 1:
+                    st.session_state.row_index += 1
+                else:
+                    st.warning("No more rows to display.")
+                    df['rating'] = st.session_state.new_values
+                    #df.to_csv('my_df.csv',index=False)
+
+                    for i in range(len(df)): 
+                        key = {
+                            'model_prompt_id': {'S': df.loc[i,'model'] + '_' +df.loc[i,'prompt']},
+                            'Date': {'S': str(df.loc[i,'Date_x']).split()[0]}
+                        }
+
+                        # Create a dictionary with the new attribute(s) to add
+                        new_attributes = {
+                            'Rating': {'N': str(df.loc[i,'rating'])}
+                        }
+                        put_item(key, new_attributes)
+
+                    st.success(f"DataFrame saved")
+
+                    return
+
+        # Display old and new responsess
+        st.write("model: ", df.iloc[st.session_state.row_index, 0])
+        st.write(f"{st.session_state.row_index+1} out of {len(df)}")
+
+
+        col1.markdown(prompts[prompts.id == df.iloc[st.session_state.row_index, 1] ]['prompt'].values[0], unsafe_allow_html=True)
+
+        with col2:
+            row1.header("latest response")
+            row1.markdown(df.loc[st.session_state.row_index, "output_x"], unsafe_allow_html=True)
+
+            row2.header("previous response")
+            if (df.date_x != df.date_y).all():
+                row2.markdown(df.iloc[st.session_state.row_index, df.columns.get_loc("output_y")], unsafe_allow_html=True)
             else:
-                st.warning("No more rows to display.")
-                df['rating'] = st.session_state.new_values
-                #df.to_csv('my_df.csv',index=False)
-                
-                for i in range(len(df)): 
-                    key = {
-                        'model_prompt_id': {'S': df.loc[i,'model'] + '_' +df.loc[i,'prompt']},
-                        'Date': {'S': str(df.loc[i,'Date_x']).split()[0]}
-                    }
+                row2.markdown("no prior evaluation exist yet", unsafe_allow_html=True)
 
-                    # Create a dictionary with the new attribute(s) to add
-                    new_attributes = {
-                        'Rating': {'N': str(df.loc[i,'rating'])}
-                    }
-                    put_item(key, new_attributes)
-                    
-                st.success(f"DataFrame saved")
 
-                return
-    
-    # Display old and new responsess
-    st.write("model: ", df.iloc[st.session_state.row_index, 0])
-    st.write(f"{st.session_state.row_index+1} out of {len(df)}")
-    
+        # collect teh user feedback
+        with col4:
+            new_value = st.selectbox(f"**Choose 0 if 'INCORRECT', 1 if 'CORRECT' and 2 if 'EXCELLENT'**", [0, 1, 2], key=st.session_state.row_index)
 
-    col1.markdown(prompts[prompts.id == df.iloc[st.session_state.row_index, 1] ]['prompt'].values[0], unsafe_allow_html=True)
 
-    with col2:
-        row1.header("latest response")
-        row1.markdown(df.loc[st.session_state.row_index, "output_x"], unsafe_allow_html=True)
-
-        row2.header("previous response")
-        if (df.date_x != df.date_y).all():
-            row2.markdown(df.iloc[st.session_state.row_index, df.columns.get_loc("output_y")], unsafe_allow_html=True)
-        else:
-            row2.markdown("no prior evaluation exist yet", unsafe_allow_html=True)
-        
-        
-    # collect teh user feedback
-    with col4:
-        new_value = st.selectbox(f"**Choose 0 if 'INCORRECT', 1 if 'CORRECT' and 2 if 'EXCELLENT'**", [0, 1, 2], key=st.session_state.row_index)
-
-        
-    # remove duplicated entries due to the default value in the user entry
-    if new_value is not None:
-        if len(st.session_state.new_values) > st.session_state.row_index:
-            st.session_state.new_values[st.session_state.row_index] = new_value
-        else:
-            st.session_state.new_values.append(new_value)
+        # remove duplicated entries due to the default value in the user entry
+        if new_value is not None:
+            if len(st.session_state.new_values) > st.session_state.row_index:
+                st.session_state.new_values[st.session_state.row_index] = new_value
+            else:
+                st.session_state.new_values.append(new_value)
 
 if __name__ == '__main__':
     main()
