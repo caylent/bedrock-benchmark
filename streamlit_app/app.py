@@ -34,15 +34,16 @@ def fetch_data():
         df1 = df.drop(columns=['output_hash', 'output_token_count', 'input_token_count', 'prompt_model_id', 'Rating'])
     else:
         df1 = df.drop(columns=['output_hash', 'output_token_count', 'input_token_count', 'prompt_model_id'])
-
-    df2 = pd.DataFrame(df.model_prompt_id.str.split('_',1).tolist(),
-                                     columns = ['model','prompt'])
+    
+    df2 = df['model_prompt_id'].str.split('_', n=1, expand=True)
+    df2.columns = ['model','prompt']
+    
     df3 = pd.concat([df1,df2], axis=1)
 
-    # remove the test records
-    df4 = df3[df3['prompt'].str.split('_',1).str[1].str.len() > 2]
 
-    df4['date']= pd.to_datetime(df4['date'])
+    df4 = df3.copy()
+    
+    df4 = df4.drop_duplicates(subset=['date', 'model', 'prompt']).reset_index(drop=True)
     
     
     # get the latest record per model/prompt category
@@ -83,10 +84,6 @@ def put_item(key, new_attributes):
         }
     )
 
-#@st.cache_data
-def load_csv(file_path):
-    df = pd.read_csv(file_path)
-    return df
 
 # Creating the Layout of the App
 st.set_page_config(layout="wide")
@@ -159,7 +156,7 @@ def main():
 
         row2.header("previous response")
         if (df.date_x != df.date_y).all():
-            row2.markdown(df.iloc[st.session_state.row_index, "output_y"], unsafe_allow_html=True)
+            row2.markdown(df.iloc[st.session_state.row_index, df.columns.get_loc("output_y")], unsafe_allow_html=True)
         else:
             row2.markdown("no prior evaluation exist yet", unsafe_allow_html=True)
         
