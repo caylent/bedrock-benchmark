@@ -145,7 +145,6 @@ def try_prompts():
             elif model.startswith("ai21"):
                 body["prompt"] = response['prompt'].get('S')
             elif model.startswith("cohere.command-r"):
-                body = body[1]
                 body["message"] = response['prompt'].get('S')
             elif model.startswith("meta"):
                 body["prompt"] = response['prompt'].get('S')
