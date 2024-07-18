@@ -34,16 +34,17 @@ def fetch_data():
         df1 = df.drop(columns=['output_hash', 'output_token_count', 'input_token_count', 'prompt_model_id', 'Rating'])
     else:
         df1 = df.drop(columns=['output_hash', 'output_token_count', 'input_token_count', 'prompt_model_id'])
-    
+
     df2 = df['model_prompt_id'].str.split('_', n=1, expand=True)
     df2.columns = ['model','prompt']
     
     df3 = pd.concat([df1,df2], axis=1)
 
-
     df4 = df3.copy()
     
     df4 = df4.drop_duplicates(subset=['date', 'model', 'prompt']).reset_index(drop=True)
+
+    df4['date']= pd.to_datetime(df4['date'])
     
     
     # get the latest record per model/prompt category
@@ -84,6 +85,10 @@ def put_item(key, new_attributes):
         }
     )
 
+#@st.cache_data
+def load_csv(file_path):
+    df = pd.read_csv(file_path)
+    return df
 
 # Creating the Layout of the App
 st.set_page_config(layout="wide")
@@ -117,11 +122,11 @@ def main():
     # add rating column to store user feedback
     df['rating'] = ''
     # go through the rows in the csv file and display them one by one
-    
+
     if len(df) == 0:
-        st.write("no prior evaluation exist yet")
-        
-    else: 
+        st.write("No data from the prior run exist yet for comparison.")
+
+    else:
         with col6:        
             if st.button("Next"):
                 if st.session_state.row_index < len(df) - 1:
@@ -130,7 +135,7 @@ def main():
                     st.warning("No more rows to display.")
                     df['rating'] = st.session_state.new_values
                     #df.to_csv('my_df.csv',index=False)
-
+                    
                     for i in range(len(df)): 
                         key = {
                             'model_prompt_id': {'S': df.loc[i,'model'] + '_' +df.loc[i,'prompt']},
@@ -142,15 +147,15 @@ def main():
                             'Rating': {'N': str(df.loc[i,'rating'])}
                         }
                         put_item(key, new_attributes)
-
+                        
                     st.success(f"DataFrame saved")
 
                     return
-
+        
         # Display old and new responsess
         st.write("model: ", df.iloc[st.session_state.row_index, 0])
         st.write(f"{st.session_state.row_index+1} out of {len(df)}")
-
+        
 
         col1.markdown(prompts[prompts.id == df.iloc[st.session_state.row_index, 1] ]['prompt'].values[0], unsafe_allow_html=True)
 
@@ -163,13 +168,13 @@ def main():
                 row2.markdown(df.iloc[st.session_state.row_index, df.columns.get_loc("output_y")], unsafe_allow_html=True)
             else:
                 row2.markdown("no prior evaluation exist yet", unsafe_allow_html=True)
-
-
+            
+            
         # collect teh user feedback
         with col4:
             new_value = st.selectbox(f"**Choose 0 if 'INCORRECT', 1 if 'CORRECT' and 2 if 'EXCELLENT'**", [0, 1, 2], key=st.session_state.row_index)
 
-
+            
         # remove duplicated entries due to the default value in the user entry
         if new_value is not None:
             if len(st.session_state.new_values) > st.session_state.row_index:
