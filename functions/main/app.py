@@ -100,7 +100,7 @@ def put_item_cohere(model, response, today_date, resp, metadata, model_shape):
             "output_hash" : computeMD5hash(resp["text"]),
             "prompt_model_id" : response['id'].get('S') + "_" + model,
             "latency" : metadata["ResponseMetadata"]["HTTPHeaders"]["x-amzn-bedrock-invocation-latency"],
-            "model_config": str(model_shape[1]),
+            "model_config": str(model_shape),
             "input_token_count" : metadata["ResponseMetadata"]["HTTPHeaders"]["x-amzn-bedrock-input-token-count"]
     })
 
