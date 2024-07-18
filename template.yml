@@ -67,7 +67,7 @@ Resources:
       Policies: arn:aws:iam::aws:policy/AdministratorAccess
       Environment:
         Variables:
-          model_shape: '{"prompt": "", "temperature": 0.75, "p": 0.01, "k": 0, "stop_sequences": [],"return_likelihoods": "NONE", "max_tokens": 2048}'
+          model_shape: '{"message": "", "temperature": 0.75, "p": 0.01, "k": 0, "stop_sequences": [], "max_tokens": 2048}'
           supported_models: '["cohere.command-r-v1:0", "cohere.command-r-plus-v1:0"]'
           benchmark_table: !Ref BedrockBenchmarkTable
           prompt_catalog: !Ref BedrockBenchmarkPromptsTable
