@@ -50,7 +50,7 @@ Resources:
       Environment:
         Variables:
           model_shape: '{"anthropic_version": "bedrock-2023-05-31", "max_tokens": 4000, "messages": [{"role": "user", "content": ""}], "temperature": 1.0,"stop_sequences": ["."], "top_p": 1.0, "top_k": 250}'
-          supported_models: '["anthropic.claude-instant-v1", "anthropic.claude-v2", "anthropic.claude-v2:1", "anthropic.claude-3-sonnet-20240229-v1:0", "anthropic.claude-3-haiku-20240307-v1:0", "anthropic.claude-3-opus-20240229-v1:0"]'
+          supported_models: '["anthropic.claude-v2:1", "anthropic.claude-3-sonnet-20240229-v1:0", "anthropic.claude-3-haiku-20240307-v1:0", "anthropic.claude-3-opus-20240229-v1:0"]'
           benchmark_table: !Ref BedrockBenchmarkTable
           prompt_catalog: !Ref BedrockBenchmarkPromptsTable
 
@@ -68,7 +68,7 @@ Resources:
       Environment:
         Variables:
           model_shape: '{"prompt": "", "temperature": 0.75, "p": 0.01, "k": 0, "stop_sequences": [],"return_likelihoods": "NONE", "max_tokens": 2048}'
-          supported_models: '["cohere.command-text-v14", "cohere.command-r-v1:0", "cohere.command-r-plus-v1:0"]'
+          supported_models: '["cohere.command-r-v1:0", "cohere.command-r-plus-v1:0"]'
           benchmark_table: !Ref BedrockBenchmarkTable
           prompt_catalog: !Ref BedrockBenchmarkPromptsTable
 
@@ -122,7 +122,7 @@ Resources:
       Environment:
         Variables:
           model_shape: '{"prompt": "", "max_gen_len":512, "temperature":0.5, "top_p":0.9}'
-          supported_models: '["meta.llama2-13b-chat-v1", "meta.llama2-70b-chat-v1", "meta.llama3-8b-instruct-v1:0", "meta.llama3-70b-instruct-v1:0"]'
+          supported_models: '["meta.llama3-8b-instruct-v1:0", "meta.llama3-70b-instruct-v1:0"]'
           benchmark_table: !Ref BedrockBenchmarkTable
           prompt_catalog: !Ref BedrockBenchmarkPromptsTable
   
