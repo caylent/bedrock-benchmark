@@ -139,7 +139,7 @@ def main():
                     for i in range(len(df)): 
                         key = {
                             'model_prompt_id': {'S': df.loc[i,'model'] + '_' +df.loc[i,'prompt']},
-                            'Date': {'S': str(df.loc[i,'Date_x']).split()[0]}
+                            'date': {'S': str(df.loc[i,'date_x']).split()[0]}
                         }
 
                         # Create a dictionary with the new attribute(s) to add
